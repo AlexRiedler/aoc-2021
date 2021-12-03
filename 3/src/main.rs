@@ -32,9 +32,8 @@ fn main() -> Result<(), std::io::Error> {
     }
 
     {
-        let oxygen_rating_str = find_oxygen_rating(&diagnostic_strs).unwrap();
-        let co2_rating_str = find_co2_rating(&diagnostic_strs).unwrap();
-
+        let oxygen_rating_str = find_rating(&diagnostic_strs, oxygen_rating_char).unwrap();
+        let co2_rating_str = find_rating(&diagnostic_strs, co2_rating_char).unwrap();
         let oxygen_rating = isize::from_str_radix(oxygen_rating_str.as_str(), 2).unwrap();
         let co2_rating= isize::from_str_radix(co2_rating_str.as_str(), 2).unwrap();
         println!("part b: oxygen={:b} co2_rating={:b} answer={}", oxygen_rating, co2_rating, oxygen_rating * co2_rating);
@@ -43,11 +42,10 @@ fn main() -> Result<(), std::io::Error> {
     Ok(())
 }
 
-fn find_oxygen_rating(diagnostic: &Vec<String>) -> Option<String> {
+fn find_rating(diagnostic: &Vec<String>, rating_char: fn(&Vec<&String>, usize) -> char) -> Option<String> {
     let mut remaining: Vec<&String> = diagnostic.iter().collect();
     for x in 0..remaining[0].len() {
-        sort_by_nth_char(&mut remaining, x);
-        let filter_char = remaining[remaining.len().div(2)].chars().nth(x).unwrap();
+        let filter_char = rating_char(&remaining, x);
         remaining = remaining.iter().filter(|s| { s.chars().nth(x).unwrap() == filter_char }).cloned().collect();
         if remaining.len() == 1 {
             return Some(remaining.first().unwrap().to_string());
@@ -56,17 +54,27 @@ fn find_oxygen_rating(diagnostic: &Vec<String>) -> Option<String> {
     None
 }
 
-fn find_co2_rating(diagnostic: &Vec<String>) -> Option<String> {
-    let mut remaining: Vec<&String> = diagnostic.iter().collect();
-    for x in 0..remaining[0].len() {
-        sort_by_nth_char(&mut remaining, x);
-        let filter_char = remaining[remaining.len().div(2)].chars().nth(x).unwrap();
-        remaining = remaining.iter().filter(|s| { s.chars().nth(x).unwrap() != filter_char }).cloned().collect();
-        if remaining.len() == 1 {
-            return Some(remaining.first().unwrap().to_string());
-        }
+fn co2_rating_char(remaining: &Vec<&String>, x: usize) -> char {
+    if occurrences_of_char_in_nth_position(&remaining, '0', x) <= occurrences_of_char_in_nth_position(&remaining, '1', x) {
+        '0'
+    } else {
+        '1'
     }
-    None
+}
+fn oxygen_rating_char(remaining: &Vec<&String>, x: usize) -> char {
+    if occurrences_of_char_in_nth_position(&remaining, '1', x) >= occurrences_of_char_in_nth_position(&remaining, '0', x) {
+        '1'
+    } else {
+        '0'
+    }
+}
+
+fn occurrences_of_char_in_nth_position(remaining: &Vec<&String>, ch: char, x: usize) -> usize {
+    remaining
+        .iter()
+        .map(|s| s.chars().nth(x).unwrap() )
+        .filter(|c| c == &ch)
+        .count()
 }
 
 fn sort_by_nth_char(remaining: &mut Vec<&String>, x: usize) {
